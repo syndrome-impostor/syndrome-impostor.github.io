@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html><head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+
+    <title>Cert unpinning with Frida - Syndrome Impostor&#39;s Blog</title>
+
+    
+    
+    <meta name="description" content="This guide will enable you to unpin android applications, and forward traffic to a local proxy (i.e. Burp/Caido/Zap) running on port :8080 on your local machine.
+References:
+https://gist.github.com/teknogeek/4dc35fb3801bd7f13e5f0da5b784c725
+https://gitlab.com/newbit/rootAVD
+https://github.com/frida/frida/releases
+ 
+Prerequisites
+
+
+You should be running an emulated device with Play Store enabled.
+
+
+You have a rooted device and adb working. If you do not already, follow instructions on https://gitlab.com/newbit/rootAVD
+
+
+
+Modern versions of android require you to use the &ldquo;FAKEBOOTIMG&rdquo; option with rootAVD. More info can be found at the link above. You may need to do a clean boot during the setup like so: emulator @device_name -no-snapshot-load" />
+    <meta name="author" content="" />
+    
+
+    <link href="https://unpkg.com/@master/normal.css" rel="stylesheet">
+    <script src="https://unpkg.com/@master/style@1.5.0"></script>
+    <script src="https://unpkg.com/@master/styles@1.13.0"></script>
+    <script src="https://unpkg.com/master-styles-group"></script>
+    <script src="https://unpkg.com/themes.js"></script>
+    <script>window.themes = window.themes || new window.Themes()</script>
+
+    <style>
+        :root {
+            --font-sans: "Inter var", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Helvetica Neue, Arial, Noto Sans, sans-serif, Apple Color Emoji, Segoe UI Emoji, Segoe UI Symbol, Noto Color Emoji;
+        }
+    </style></head>
+<body class="bg:fade-84@dark font:fade-16@dark font:sans">
+    <nav class="w:full h:90 fixed bg:fade-84/.95@dark bg:white z:1000">
+    <div class="
+        h:full
+        w:full
+        max-w:1200
+        mx:auto
+        px:32
+        d:flex
+        align-items:center
+    ">
+        <div>
+            <a href="/" class="mr-3 font:extralight">
+              
+              Syndrome Impostor&#39;s Blog
+              
+            </a>
+        </div>
+
+        <div class="ml:auto">
+            
+            
+            
+            
+            <a class="
+                font:semibold
+                font:fade
+                font:fade-10:hover
+                font:fade-30.active
+                px:8
+                transition:150ms;ease-in
+                
+            " href="/about/" title="">About</a>
+            
+        </div>
+    </div>
+</nav>
+<div class="d:flex flex:column@<=sm pt:90 px:24 jc:center gap:44 word-break:break-word">
+        <div class="max-w:700 w:full box:content-box">
+<article class="box:border-box pt:32">
+    <header class="mb:32">
+        <div class="font:40 font:extrabold">Cert unpinning with Frida</div>
+        <div class="mt:16 f:fade-60">
+            <time>Sep 22, 2024</time>
+            </div>
+    </header><div class="
+    _:where(a):hover{text-decoration-color:fade}
+    _:where(a){text-decoration:2;underline;fade-10;_text-decoration-color:fade-70@dark}
+    _:where(blockquote){bl:5;solid;fade-76/.1;_bl:5;solid;fade-34/.1@dark}
+    _:where(code){font:90%;_v:middle}
+    _:where(code:not(.highlight_*,pre_*)){p:2;6;_r:4}
+    _:where(del){text-decoration:1;line-through;fade-68;_text-decoration-color:red-64@dark}
+    _:where(figcaption){text:14;_p:10;20;0;_width:fit;_mx:auto;_font:fade-56;_font:fade-57@dark}
+    _:where(h1){font:40;_font:extrabold}
+    _:where(h1,h2,h3)+:where(h1,h2,h3){mt:.5em}
+    _:where(h1,h2,h3,h4,h5,h6){mt:2em}
+    _:where(h2){mb:1em;_font:32}
+    _:where(h3){font:24}
+    _:where(h4){font:20}
+    _:where(h5){font:16}
+    _:where(h6){font:14}
+    _:where(li)::marker{font:fade-44;_font:fade-68@dark}
+    _:where(li){pl:.375em}
+    _:where(mark){text-decoration:1;underline;#fce016;_bg:transparent;_text-decoration-color:rgb(252;224;22/.5)@dark}
+    _:where(p,li){font:fade-76;_font:16;_line-height:1.65;_font:fade-34@dark}
+    _:where(p,pre,blockquote,figure,ul,ol,table){my:1.125em}
+    >:first-child{mt:0!}
+    _:where(pre){p:20;_r:8;_overflow:auto}
+    _:where(pre,code:not(.highlight_*)){bg:fade-2;_bg:fade-92!@dark}
+    _:where(strong,b,a,code:not(.highlight_*),mark,del){font:fade-92;_font:fade-12@dark}
+    _:where(table){width:full;_border-spacing:0}
+    _:where(td){v:baseline}
+    _:where(td,th):first-child{pl:0}
+    _:where(td,th):last-child{pr:0}
+    _:where(td,th){bb:1;solid;fade-92/.06;_p:6;_b:fade-4/.04@dark}
+    _:where(th){font:fade-78;_font:14;_text:left;_font:fade-12@dark}
+    _:where(th,p_code,li_code,a,mark){font:semibold;_font:medium@dark}
+    _:where(ul){list-style-type:disc}
+    _:where(ul,ol,blockquote){pl:1.5em}
+    _:where(video,img){max-width:full}
+    _:where(a,mark){text-underline-offset:3}
+    _:where(hr){h:2;_bg:fade-10;_bg:fade-70@dark;_my:3em}
+"><p>This guide will enable you to unpin android applications, and forward traffic to a local proxy (i.e. Burp/Caido/Zap) running on port :8080 on your local machine.</p>
+<p><strong>References:</strong><br>
+<a href="https://gist.github.com/teknogeek/4dc35fb3801bd7f13e5f0da5b784c725">https://gist.github.com/teknogeek/4dc35fb3801bd7f13e5f0da5b784c725</a><br>
+<a href="https://gitlab.com/newbit/rootAVD">https://gitlab.com/newbit/rootAVD</a><br>
+<a href="https://github.com/frida/frida/releases">https://github.com/frida/frida/releases</a></p>
+<p> </p>
+<h2 id="prerequisites">Prerequisites</h2>
+<ul>
+<li>
+<p>You should be running an emulated device with Play Store enabled.</p>
+</li>
+<li>
+<p>You have a rooted device and adb working. If you do not already, follow instructions on <a href="https://gitlab.com/newbit/rootAVD">https://gitlab.com/newbit/rootAVD</a></p>
+</li>
+</ul>
+<blockquote>
+<p><em>Modern versions of android require you to use the &ldquo;FAKEBOOTIMG&rdquo; option with rootAVD. More info can be found at the link above. You may need to do a clean boot during the setup like so: <code>emulator @device_name -no-snapshot-load</code></em></p>
+</blockquote>
+<h3 id="to-confirm-your-device-is-rooted-properly">To confirm your device is rooted properly:</h3>
+<ol>
+<li><code>adb root</code> should fail, indicating you&rsquo;re running a production build:<br>
+<img src="images/adbroot.png" alt="adb root"></li>
+<li>Connect to your emulator:</li>
+</ol>
+<pre tabindex="0"><code>adb shell
+</code></pre><ol start="3">
+<li>Now that you&rsquo;re connected to your device, execute these commands:</li>
+</ol>
+<pre tabindex="0"><code>su
+id
+</code></pre><ol start="4">
+<li>Confirm that you see a #, and you are root:</li>
+</ol>
+<p><img src="images/adbshell.png" alt="adb shell"></p>
+<p> </p>
+<h1 id="frida-setup">Frida Setup</h1>
+<p>Frida runs as client/server. The server runs on your android emulator, and the client runs on the PC with adb.</p>
+<h3 id="client-setup">Client setup</h3>
+<p><em>Requires python3 installed</em>:</p>
+<pre tabindex="0"><code>pip3 install frida-tools
+</code></pre><h3 id="android-setup">Android setup</h3>
+<ol>
+<li>Download the latest frida server from: <a href="https://github.com/frida/frida/releases">https://github.com/frida/frida/releases</a><br>
+<code>frida-server-XX-android-arm64.xz</code></li>
+</ol>
+<blockquote>
+<p><em>frida-server needs to match your Android virtualized hardware, usually arm64. This can be checked with <code>adb shell getprop ro.product.cpu.abi</code></em></p>
+</blockquote>
+<ol start="2">
+<li>Unpack the .xz archive.</li>
+<li>Move the unpacked frida-server to your android device:</li>
+</ol>
+<pre tabindex="0"><code>adb push frida-server-XX-android-arm64 /data/local/tmp/frida-server
+</code></pre><ol start="4">
+<li>Make frida-server executable:</li>
+</ol>
+<pre tabindex="0"><code>adb shell chmod 755 /data/local/tmp/frida-server
+</code></pre><h2 id="setup-forwarding-to-your-web-proxy">Setup forwarding to your web proxy</h2>
+<p><strong>From the android device:</strong></p>
+<p>Go to Settings -&gt; Network and Internet -&gt; Wi-Fi -&gt; AndroidWifi -&gt; Edit (Pen icon)</p>
+<pre tabindex="0"><code>Proxy hostname: 127.0.0.1
+Proxy port: 8080
+</code></pre><blockquote>
+<p>If you see a notification about the Wifi not having connection, choose &lsquo;use anyways&rsquo;.</p>
+</blockquote>
+<blockquote>
+<p>Disabling LTE on the emulator will stop the traffic from going through an alternate interface. This doesn&rsquo;t always matter, but can help make it more reliable.</p>
+</blockquote>
+<h2 id="using-frida">Using Frida</h2>
+<ol>
+<li>Connect to your Android device as root:</li>
+</ol>
+<pre tabindex="0"><code>adb shell
+su
+</code></pre><ol start="2">
+<li>Find the name of your application:</li>
+</ol>
+<pre tabindex="0"><code>pm list packages|grep APPNAME
+</code></pre><p><img src="images/package.png" alt="Package name"></p>
+<blockquote>
+<p>Here, the app name is &lsquo;com.ringapp&rsquo;</p>
+</blockquote>
+<ol start="3">
+<li>Start the daemon:</li>
+</ol>
+<pre tabindex="0"><code>/data/local/tmp/frida-server -D
+</code></pre><h3 id="hooking-the-app">Hooking the app</h3>
+<ol>
+<li>
+<p>Download the universal unpinning script from teknogeek: <a href="https://gist.github.com/teknogeek/4dc35fb3801bd7f13e5f0da5b784c725">https://gist.github.com/teknogeek/4dc35fb3801bd7f13e5f0da5b784c725</a></p>
+</li>
+<li>
+<p>Hook the local tcp:8080 to your machines&rsquo; tcp:8080:</p>
+</li>
+</ol>
+<pre tabindex="0"><code>adb reverse tcp:8080 tcp:8080
+</code></pre><blockquote>
+<p>This has to be run every time you restart the emulator</p>
+</blockquote>
+<ol start="3">
+<li>Run the frida unpinning script: <code>frida -U -l ./universalUnpin.js -f com.&lt;appname&gt;</code></li>
+</ol>
+<p>You should now see traffic flowing through your web proxy!</p>
+<p> </p>
+<h2 id="quickstart-after-reboot">Quickstart after reboot</h2>
+<ol>
+<li>Start your emulator:</li>
+</ol>
+<pre tabindex="0"><code>emulator @rooted
+</code></pre><blockquote>
+<p>Ensure Wifi is on and used as the main network</p>
+</blockquote>
+<ol start="2">
+<li>Forward the android port to your local system, and start the Frida daemon:</li>
+</ol>
+<pre tabindex="0"><code>adb reverse tcp:8080 tcp:8080 &amp;&amp; adb shell su -c /data/local/tmp/frida-server -D
+</code></pre><blockquote>
+<p>The daemon will hang your terminal. You can either close the terminal, or open a second to run the next command.</p>
+</blockquote>
+<ol start="3">
+<li>Launch the app with the unpinning script:</li>
+</ol>
+<pre tabindex="0"><code>frida -U -l /Users/laptop/Documents/android/universalUnpin.js -f com.&lt;appname&gt;
+</code></pre></div></article>
+<footer class="py:24">
+    <div class="f:fade-30 f:14 mb:8"></div>
+    <div class="f:fade-60 f:12">Theme <a class="f:bold" href="https://github.com/serkodev/holy" _target="_blank">Holy</a></div>
+</footer></div>
+    </div>
+</body>
+
+</html>
