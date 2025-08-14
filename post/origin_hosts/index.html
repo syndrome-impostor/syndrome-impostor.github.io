@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="en" dir="auto">
+
+<head><script src="/livereload.js?mindelay=10&amp;v=2&amp;port=1313&amp;path=livereload" data-no-instant defer></script><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<meta name="robots" content="noindex, nofollow">
+<title>Fuzzing for Exposed Origin Hosts | Syndrome Impostor&#39;s Blog</title>
+<meta name="keywords" content="">
+<meta name="description" content="Intro
+After spending a lot of time staring at this page, I was a little tired of seeing it.
+
+Over the past few months, I&rsquo;ve developed a testing methodology for discovering origin hosts.
+I originally thought that this methodology was just a WAF bypass. However, in the six months it took me to write this up, I&rsquo;ve used origin host discovery to find applications with unlisted DNS addresses, to access restricted application paths, and to perform server-side attacks with absolutely no rate limits or content filtering. Since this is a methodology and not a direct vulnerability, the potential uses are limited only by your imagination.">
+<meta name="author" content="Syndrome Impostor">
+<link rel="canonical" href="http://localhost:1313/post/origin_hosts/">
+<link crossorigin="anonymous" href="/assets/css/stylesheet.8fe10233a706bc87f2e08b3cf97b8bd4c0a80f10675a143675d59212121037c0.css" integrity="sha256-j&#43;ECM6cGvIfy4Is8&#43;XuL1MCoDxBnWhQ2ddWSEhIQN8A=" rel="preload stylesheet" as="style">
+<link rel="icon" href="http://localhost:1313/favicon.ico">
+<link rel="icon" type="image/png" sizes="16x16" href="http://localhost:1313/favicon-16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="http://localhost:1313/favicon-32x32.png">
+<link rel="apple-touch-icon" href="http://localhost:1313/apple-touch-icon.png">
+<link rel="mask-icon" href="http://localhost:1313/safari-pinned-tab.svg">
+<meta name="theme-color" content="#2e2e33">
+<meta name="msapplication-TileColor" content="#2e2e33">
+<link rel="alternate" hreflang="en" href="http://localhost:1313/post/origin_hosts/">
+<noscript>
+    <style>
+        #theme-toggle,
+        .top-link {
+            display: none;
+        }
+
+    </style>
+    <style>
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --theme: rgb(29, 30, 32);
+                --entry: rgb(46, 46, 51);
+                --primary: rgb(218, 218, 219);
+                --secondary: rgb(155, 156, 157);
+                --tertiary: rgb(65, 66, 68);
+                --content: rgb(196, 196, 197);
+                --code-block-bg: rgb(46, 46, 51);
+                --code-bg: rgb(55, 56, 62);
+                --border: rgb(51, 51, 51);
+            }
+
+            .list {
+                background: var(--theme);
+            }
+
+            .list:not(.dark)::-webkit-scrollbar-track {
+                background: 0 0;
+            }
+
+            .list:not(.dark)::-webkit-scrollbar-thumb {
+                border-color: var(--theme);
+            }
+        }
+
+    </style>
+</noscript>
+</head>
+
+<body class="" id="top">
+<script>
+    if (localStorage.getItem("pref-theme") === "dark") {
+        document.body.classList.add('dark');
+    } else if (localStorage.getItem("pref-theme") === "light") {
+        document.body.classList.remove('dark')
+    } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        document.body.classList.add('dark');
+    }
+
+</script>
+
+<header class="header">
+    <nav class="nav">
+        <div class="logo">
+            <a href="http://localhost:1313/" accesskey="h" title="Syndrome Impostor&#39;s Blog (Alt + H)">Syndrome Impostor&#39;s Blog</a>
+            <div class="logo-switches">
+                <button id="theme-toggle" accesskey="t" title="(Alt + T)" aria-label="Toggle theme">
+                    <svg id="moon" xmlns="http://www.w3.org/2000/svg" width="24" height="18" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                    </svg>
+                    <svg id="sun" xmlns="http://www.w3.org/2000/svg" width="24" height="18" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="5"></circle>
+                        <line x1="12" y1="1" x2="12" y2="3"></line>
+                        <line x1="12" y1="21" x2="12" y2="23"></line>
+                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                        <line x1="1" y1="12" x2="3" y2="12"></line>
+                        <line x1="21" y1="12" x2="23" y2="12"></line>
+                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                    </svg>
+                </button>
+            </div>
+        </div>
+        <ul id="menu">
+            <li>
+                <a href="http://localhost:1313/about/" title="About">
+                    <span>About</span>
+                </a>
+            </li>
+        </ul>
+    </nav>
+</header>
+<main class="main">
+
+<article class="post-single">
+  <header class="post-header">
+    
+    <h1 class="post-title entry-hint-parent">
+      Fuzzing for Exposed Origin Hosts
+    </h1>
+    <div class="post-meta"><span title='2025-04-08 14:55:06 -0700 PDT'>April 8, 2025</span>&nbsp;·&nbsp;Syndrome Impostor
+
+</div>
+  </header> <div class="toc">
+    <details >
+        <summary accesskey="c" title="(Alt + C)">
+            <span class="details">Table of Contents</span>
+        </summary>
+
+        <div class="inner"><ul>
+                <li>
+                    <a href="#intro" aria-label="Intro">Intro</a><ul>
+                        
+                <li>
+                    <a href="#tldr" aria-label="tl;dr">tl;dr</a></li>
+                <li>
+                    <a href="#overview" aria-label="Overview">Overview</a></li>
+                <li>
+                    <a href="#caveats" aria-label="Caveats">Caveats</a></li></ul>
+                </li>
+                <li>
+                    <a href="#methodology" aria-label="Methodology">Methodology</a><ul>
+                        
+                <li>
+                    <a href="#part-one-identifying-ip-ranges" aria-label="Part one: Identifying IP ranges">Part one: Identifying IP ranges</a><ul>
+                        
+                <li>
+                    <a href="#technique-1---nslookup" aria-label="Technique 1 - nslookup">Technique 1 - nslookup</a></li>
+                <li>
+                    <a href="#technique-2---subdomain-enumeration" aria-label="Technique 2 - subdomain enumeration">Technique 2 - subdomain enumeration</a></li>
+                <li>
+                    <a href="#technique-3---certificate-aliases" aria-label="Technique 3 - certificate aliases">Technique 3 - certificate aliases</a></li>
+                <li>
+                    <a href="#technique-4---reverse-arinripe-search" aria-label="Technique 4 - reverse ARIN/RIPE search">Technique 4 - reverse ARIN/RIPE search</a></li>
+                <li>
+                    <a href="#results" aria-label="Results">Results</a></li></ul>
+                </li>
+                <li>
+                    <a href="#part-two-identify-http-request-for-investigation" aria-label="Part two: Identify HTTP request for investigation">Part two: Identify HTTP request for investigation</a></li>
+                <li>
+                    <a href="#part-three-find-origin-ip-addresses" aria-label="Part Three: Find origin IP address(es)">Part Three: Find origin IP address(es)</a><ul>
+                        
+                <li>
+                    <a href="#create-ip-list" aria-label="Create IP list">Create IP list</a></li>
+                <li>
+                    <a href="#fuzzing" aria-label="Fuzzing!">Fuzzing!</a><ul>
+                        
+                <li>
+                    <a href="#basic-version" aria-label="Basic version:">Basic version:</a></li>
+                <li>
+                    <a href="#stubborn-version" aria-label="Stubborn version:">Stubborn version:</a></li>
+                <li>
+                    <a href="#results-1" aria-label="Results">Results</a></li></ul>
+                </li></ul>
+                </li>
+                <li>
+                    <a href="#part-four-back-to-testing" aria-label="Part Four: Back to testing">Part Four: Back to testing</a></li></ul>
+                </li>
+                <li>
+                    <a href="#case-study" aria-label="Case Study">Case Study</a><ul>
+                        
+                <li>
+                    <a href="#i-have-currently-tested-against-713-programs-this-section-will-be-updated-with-findings-upon-completion" aria-label="I have currently tested against 7/13 programs. This section will be updated with findings upon completion.">I have currently tested against 7/13 programs. This section will be updated with findings upon completion.</a></li></ul>
+                </li>
+                <li>
+                    <a href="#defending-against-this-technique" aria-label="Defending against this technique">Defending against this technique</a><ul>
+                        
+                <li>
+                    <a href="#network-edge" aria-label="Network edge">Network edge</a></li>
+                <li>
+                    <a href="#reverse-proxy" aria-label="Reverse Proxy">Reverse Proxy</a><ul>
+                        
+                <li>
+                    <a href="#nginx" aria-label="nginx">nginx</a></li>
+                <li>
+                    <a href="#apache-httpd-24" aria-label="Apache httpd 2.4">Apache httpd 2.4</a></li></ul>
+                </li>
+                <li>
+                    <a href="#cloudflare-tunneling" aria-label="Cloudflare Tunneling">Cloudflare Tunneling</a></li></ul>
+                </li>
+                <li>
+                    <a href="#complimentary-reading" aria-label="Complimentary reading:">Complimentary reading:</a>
+                </li>
+            </ul>
+        </div>
+    </details>
+</div>
+
+  <div class="post-content"><h1 id="intro">Intro<a hidden class="anchor" aria-hidden="true" href="#intro">#</a></h1>
+<p>After spending a lot of time staring at this page, I was a little tired of seeing it.<br>
+<img alt="2193894b96768f213c63a17e420f44b6.png" loading="lazy" src="/post/origin_hosts/images/2193894b96768f213c63a17e420f44b6.png"></p>
+<p>Over the past few months, I&rsquo;ve developed a testing methodology for discovering origin hosts.<br>
+I originally thought that this methodology was just a WAF bypass. However, in the six months it took me to write this up, I&rsquo;ve used origin host discovery to find applications with unlisted DNS addresses, to access restricted application paths, and to perform server-side attacks with absolutely no rate limits or content filtering. Since this is a methodology and not a direct vulnerability, the potential uses are limited only by your imagination.</p>
+<p>In this blog post I hope to share with you:</p>
+<ol>
+<li>A relatively simple way to discover origin hosts</li>
+<li>Some ideas on how/when to use it</li>
+<li>How to defend against this methodology</li>
+</ol>
+<h2 id="tldr">tl;dr<a hidden class="anchor" aria-hidden="true" href="#tldr">#</a></h2>
+<p>Companies don&rsquo;t restrict traffic to port :443 on edge routing devices, exposing applications and reverse proxies. Fuzz across IP ranges for a known URL to find alternative routes to applications, bypassing cloud protections.</p>
+<h2 id="overview">Overview<a hidden class="anchor" aria-hidden="true" href="#overview">#</a></h2>
+<p>Many companies own ranges of public IP addresses, that they assign to cloud and on-premises edge network devices. With modern web application routing, it&rsquo;s common for application paths to be hosted on different servers across the IP ranges.<br>
+By choosing specific paths and locating their network edge, we can access them without their WAF protections.<br>
+In some cases, we can even use this technique to access publicly restricted paths, or FQDNs with unlisted DNS addresses.</p>
+<p>There are two main architectures that we&rsquo;ll encounter. Web ports will typically point to either a reverse proxy, or to a web server. I find the reverse proxy situation more interesting, as simple misconfigurations can unintentionally open a path to unlisted FQDNs, or restricted application paths.</p>
+<p><img alt="WAFroute.drawio.svg" loading="lazy" src="/post/origin_hosts/images/WAFroute.drawio.svg"></p>
+<h2 id="caveats">Caveats<a hidden class="anchor" aria-hidden="true" href="#caveats">#</a></h2>
+<p>Since we&rsquo;ll be manually routing to the edge of the client network, there are some considerations we have to make.</p>
+<ul>
+<li>Read the bug bounty scope page. Make sure that testing against their IP ranges directly does not violate any terms.</li>
+<li>You won&rsquo;t be able to perform any attacks that require a victim to visit the site this way, such as clicking a link.</li>
+<li>Different subdomains/paths might be scattered around the client infrastructure, so you may have to redo this process during testing in order to find different endpoints.</li>
+<li>Your target or endpoint might already have mitigations in place.</li>
+<li>You might hit a reverse proxy or a web application. I usually find reverse proxies to be more interesting, as they can be connected to many web apps and are easily misconfigured.</li>
+</ul>
+<h1 id="methodology">Methodology<a hidden class="anchor" aria-hidden="true" href="#methodology">#</a></h1>
+<ol>
+<li>Identify IP ranges</li>
+<li>Choose a URL to look for</li>
+<li>Fuzz</li>
+<li>Get back to testing</li>
+</ol>
+<h2 id="part-one-identifying-ip-ranges">Part one: Identifying IP ranges<a hidden class="anchor" aria-hidden="true" href="#part-one-identifying-ip-ranges">#</a></h2>
+<p>In order to route to the company-owned edge, we first need to differentiate between cloud owned IPs and company owned IPs. The easiest and safest is to pull the IP ranges straight off of the bug bounty scope, or to have the in-scope ranges provided by the client. If you have been provided IP ranges, feel free to skip to the next section.</p>
+<p>If that&rsquo;s not an option for you, we can use some of the following methods to locate the IP ranges where applications are hosted. For sites in North America, I will use ARIN to verify ownership and size of the IP range. If you&rsquo;re in the EU, you can use RIPE instead: <a href="https://apps.db.ripe.net/">https://apps.db.ripe.net/</a><br>
+There are so many ways to discover origin IP ranges, including OSINT tools such as Shodan, Censys, Hackertarget, among others. I&rsquo;ll go over some of my methods below, but use whatever works for you.</p>
+<h3 id="technique-1---nslookup">Technique 1 - nslookup<a hidden class="anchor" aria-hidden="true" href="#technique-1---nslookup">#</a></h3>
+<p>In most cases, this is really only useful to confirm that our target is behind a WAF. You could also use something like wafw00f if you prefer.<br>
+<code>nslookup &lt;site.com&gt;</code></p>
+<p>In the output, we can sometimes see immediately that this is behind a cloud WAF:<br>
+<img alt="akamaiedge.png" loading="lazy" src="/post/origin_hosts/images/akamaiedge.png"></p>
+<p>Just to prove that this is owned by the WAF vendor, we can search for it in the ARIN database by putting the resolved IP in the search bar: <a href="https://www.arin.net/">https://www.arin.net/</a></p>
+<h3 id="technique-2---subdomain-enumeration">Technique 2 - subdomain enumeration<a hidden class="anchor" aria-hidden="true" href="#technique-2---subdomain-enumeration">#</a></h3>
+<p>It&rsquo;s common for companies to point fringe subdomains directly to an IP address in their range. These are usually internal or test/pre-prod environments - look for anything that goes against the pattern.<br>
+This method is probably the most likely to provide accurate results, as well as false positives. When sifting through IP addresses, ignore results that mention cloud providers as they are not owned by the target.</p>
+<p><code>subfinder -d &lt;site.com&gt; | tee subdomains.txt</code><br>
+<code>cat subdomains.txt | httpx -title -status-code -tech-detect -follow-redirects -ports 443 -location -ip</code></p>
+<p>Once you&rsquo;ve identified some IPs that look suspicious, check ARIN again to confirm that they are owned by the target: <a href="https://www.arin.net/">https://www.arin.net/</a></p>
+<h3 id="technique-3---certificate-aliases">Technique 3 - certificate aliases<a hidden class="anchor" aria-hidden="true" href="#technique-3---certificate-aliases">#</a></h3>
+<p>Sometimes companies will include server IP addresses as aliases inside of certificates.<br>
+This can be done in a number of different ways, such as inspecting the cert details in your browser or pulling down and decoding each one with openssl.</p>
+<p>I have created a simple bash script that will attempt a connection to every site in &lsquo;domains.txt&rsquo;, printing DNS and IP aliases in the certificate to the terminal. It is painfully slow.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cert_scrape.sh" data-lang="cert_scrape.sh"><span style="display:flex;"><span><span style="color:#66d9ef">while</span> read domain; <span style="color:#66d9ef">do</span>
+</span></span><span style="display:flex;"><span>  echo <span style="color:#e6db74">&#34;Domain: </span>$domain<span style="color:#e6db74">&#34;</span>
+</span></span><span style="display:flex;"><span>  timeout <span style="color:#ae81ff">2</span> openssl s_client -connect <span style="color:#e6db74">${</span>domain<span style="color:#e6db74">}</span>:443 -servername <span style="color:#e6db74">${</span>domain<span style="color:#e6db74">}</span> &lt;/dev/null 2&gt;/dev/null | 
+</span></span><span style="display:flex;"><span>    openssl x509 -noout -text 2&gt;/dev/null | 
+</span></span><span style="display:flex;"><span>    grep -A1 <span style="color:#e6db74">&#34;Subject Alternative Name&#34;</span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">done</span> &lt; subdomains.txt
+</span></span></code></pre></div><p><em>You can also run this script against a range of <strong>IP addresses</strong>, identifying services on each IP</em></p>
+<p>Don&rsquo;t forget to check ARIN to confirm that they are owned by the target: <a href="https://www.arin.net/">https://www.arin.net/</a></p>
+<h3 id="technique-4---reverse-arinripe-search">Technique 4 - reverse ARIN/RIPE search<a hidden class="anchor" aria-hidden="true" href="#technique-4---reverse-arinripe-search">#</a></h3>
+<p>This is a low-confidence way to identify potential ranges - exercise extra caution when looking up ranges this way.<br>
+ARIN has an advanced search, which can identify all the IP ranges that a company owns.<br>
+Remember that ownership does not mean that we are authorized to test against these ranges. For instance telecom providers may own many ranges, some belonging to residential/corporate customers, while some are used for internal services.</p>
+<p><a href="https://whois.arin.net/ui/advanced.jsp">https://whois.arin.net/ui/advanced.jsp</a><br>
+<em>The search supports wildcards. For example you could search &ldquo;tesla*&rdquo; under &ldquo;Organization&rdquo; to see ranges owned by Tesla Motors, Tesla Inc, etc.</em><br>
+Once finding the organization, click on &ldquo;Related Networks&rdquo;</p>
+<h3 id="results">Results<a hidden class="anchor" aria-hidden="true" href="#results">#</a></h3>
+<p>At this point, you should have some IP ranges in CIDR notation that looks something like this:</p>
+<pre tabindex="0"><code>123.123.120.0/22
+234.234.192.0/18
+</code></pre><p>Keep these handy, as we&rsquo;ll need them for part 3.</p>
+<h2 id="part-two-identify-http-request-for-investigation">Part two: Identify HTTP request for investigation<a hidden class="anchor" aria-hidden="true" href="#part-two-identify-http-request-for-investigation">#</a></h2>
+<p>This part will require a little creativity from the reader. Identify an interesting path (e.g. <a href="https://www.victim.com/path/for/testing">www.victim.com/path/for/testing</a>) that you want to try out.<br>
+There are so many things you could possibly look for. Fire up your web proxy of choice (Burp Suite/Caido/etc) and start digging!</p>
+<p>Some ideas:</p>
+<ul>
+<li>Unreachable hostnames or paths (in the .js files?)</li>
+<li>Injection point where a WAF is blocking your testing</li>
+<li>Path traversal you want to fuzz that has rate limiting</li>
+</ul>
+<p>Once you&rsquo;ve identified a path you want to test, move on to the next step.</p>
+<h2 id="part-three-find-origin-ip-addresses">Part Three: Find origin IP address(es)<a hidden class="anchor" aria-hidden="true" href="#part-three-find-origin-ip-addresses">#</a></h2>
+<p>What we&rsquo;re doing now is looking for our application path, on all the IP addresses we identified in part 1.</p>
+<ul>
+<li>The first hit on ffuf should be the true domain. It should match what we saw in our web proxy.</li>
+<li>The content length from the true domain should match that of the true request in our proxy.</li>
+</ul>
+<h3 id="create-ip-list">Create IP list<a hidden class="anchor" aria-hidden="true" href="#create-ip-list">#</a></h3>
+<p>Before we can fuzz, we need to create a list of IP addresses to check against. I couldn&rsquo;t find an easy way to do this, so I created a simple tool in go that does this. Feel free to use it, or find another way to turn the IP ranges into a list of IP addresses.</p>
+<p><em>expand-cidr</em> installation and usage instructions: <a href="https://github.com/syndrome-impostor/expand-cidr">https://github.com/syndrome-impostor/expand-cidr</a></p>
+<ol>
+<li>Put all CIDRs you&rsquo;ve identified into a file</li>
+<li>Turn this into a list of individual addresses <code>cat cidrs.txt | expand-cidr &gt; ips.txt</code></li>
+<li>Optional: Append the true domain to the top of ips.txt.<br>
+<em>I do this each time I pick a target on a different subdomain. It acts as a canary, proving that our request worked, and giving us a baseline response code/length</em></li>
+</ol>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-ips.txt" data-lang="ips.txt"><span style="display:flex;"><span>asdf.example.com
+</span></span><span style="display:flex;"><span>123.123.120.0
+</span></span><span style="display:flex;"><span>123.123.120.1
+</span></span><span style="display:flex;"><span>123.123.120.2
+</span></span><span style="display:flex;"><span>...
+</span></span></code></pre></div><h3 id="fuzzing">Fuzzing!<a hidden class="anchor" aria-hidden="true" href="#fuzzing">#</a></h3>
+<p>Now that we know where to look, and what we&rsquo;re looking for, let&rsquo;s get started.<br>
+I&rsquo;ll be using the HTTP request <code>GET www.victim.com/path/for/testing</code> in the examples below.</p>
+<p>I use the &lsquo;-timeout&rsquo; and &lsquo;-t&rsquo; (threads) variables to speed up the testing, since most IPs will not reply to our request, and ffuf will patiently wait for responses that aren&rsquo;t coming. This way we only wait 2 seconds max, and run 400 concurrent requests.<br>
+You could also use the <code>-fs</code> flag to filter on content size for higher confidence results, if that&rsquo;s your thing.</p>
+<h4 id="basic-version">Basic version:<a hidden class="anchor" aria-hidden="true" href="#basic-version">#</a></h4>
+<p>Replace the <code>/path/for/testing</code> with your application path, and <code>www.victim.com</code> with your desired host.<br>
+<code>ffuf -w ips.txt -u https://FUZZ/path/for/testing -H &quot;Host: www.victim.com&quot; -timeout 2 -t 400</code></p>
+<p>If the first request with the true FQDN fails, the most likely culprit is that our ffuf job is using (or not using) some parameters that are causing our request to not reach the destination server.<br>
+A relatively easy method to fix the request is shown in the &ldquo;Stubborn version&rdquo; section below.</p>
+<h4 id="stubborn-version">Stubborn version:<a hidden class="anchor" aria-hidden="true" href="#stubborn-version">#</a></h4>
+<ul>
+<li>From burp/caido: &ldquo;Copy as cURL&rdquo;<br>
+<em>This will copy all the headers and cookies, which can help bypass anti-bot protections</em></li>
+<li>Change <code>curl -k</code> to <code>ffuf -w ips.txt -u</code></li>
+<li>Replace the FQDN in the URL with <code>FUZZ</code></li>
+<li>Add the timeouts and threads <code>-timeout 2 -t 400</code><br>
+When you&rsquo;re done, it should look something like this:<br>
+<code>ffuf -w ips.txt -u https://FUZZ/path/for/testing -H $'Host: www.victim.com' -H $'Connection: keep-alive' -H $'Cookie: cookie1=asdf; cookie2=qwer' -timeout 2 -t 400</code><br>
+<em>If you want, you can also filter by content-length (<code>-fs &lt;bytes&gt;</code>) of the response to only see results that exactly match the expected content-length.</em></li>
+</ul>
+<h4 id="results-1">Results<a hidden class="anchor" aria-hidden="true" href="#results-1">#</a></h4>
+<p>Your ffuf output should look similar to this:</p>
+<p><img alt="ffuf.png" loading="lazy" src="/post/origin_hosts/images/ffuf.png"></p>
+<p>Each request that matches your canary request, should be a route to your application!</p>
+<h2 id="part-four-back-to-testing">Part Four: Back to testing<a hidden class="anchor" aria-hidden="true" href="#part-four-back-to-testing">#</a></h2>
+<p>Now, you can take the matching IPs from the ffuf output and put them right back into your reverse proxy!<br>
+**In Burp:  **
+<img alt="burp.png" loading="lazy" src="/post/origin_hosts/images/burp.png"></p>
+<p>**In Caido:  **
+<img alt="caido.png" loading="lazy" src="/post/origin_hosts/images/caido.png"></p>
+<h1 id="case-study">Case Study<a hidden class="anchor" aria-hidden="true" href="#case-study">#</a></h1>
+<h2 id="i-have-currently-tested-against-713-programs-this-section-will-be-updated-with-findings-upon-completion">I have currently tested against 7/13 programs. This section will be updated with findings upon completion.<a hidden class="anchor" aria-hidden="true" href="#i-have-currently-tested-against-713-programs-this-section-will-be-updated-with-findings-upon-completion">#</a></h2>
+<p><strong>Success criteria:</strong> Discover the origin host for an application, whose public DNS record resolves to a cloud WAF.</p>
+<p>In order to see if this methodology was useful, I tested against 13 bug bounty programs of various sizes. I chose the programs based on their rules of engagement, targeting programs that this methodology would be allowed on. This wasn&rsquo;t easy to determine, and could be improved for researcher peace of mind. If you run a bug bounty program and want this vector protected, consider including &ldquo;all assets owned by&rdquo;, or specific testable ranges in your program briefs.<br>
+What I discovered when testing was that this methodology is slow to get results. Against some bug bounty programs, I could access just about every external path this way, on both the primary domain as well as some other subdomains. To the point that I started to question whether this is just the accepted norm, implying there was absolutely nothing interesting to find here.</p>
+<p>The two main use cases that I was able to identify were:</p>
+<ul>
+<li>WAF bypass for unrestricted testing</li>
+<li>Abusing misconfigured reverse proxies to access internal only hosts</li>
+</ul>
+<p>A tertiary use case that I believe exists:</p>
+<ul>
+<li>Bypassing path-based restrictions imposed by WAFs<br>
+While this vector is interesting, I don&rsquo;t have a good recon strategy to identify paths that are restricted this way.</li>
+</ul>
+<p>Testing on even a small subset of programs took several weeks. I think that to improve the ROI for this methodology, it should be paired with other techniques.<br>
+For instance, scrape a target for a list of unresolvable URLs, and recursively fuzz for all of those across the identified IP range(s).</p>
+<p>Further improvements can be made in improving reliability of results. When fuzzing, my requests would often fail even with the canary/real FQDN. This was solvable by modifying headers such as User-Agent, Accept-Encoding, etc.. However, when we&rsquo;re looking for internal endpoints we don&rsquo;t always know the exact headers for a successful connection. This creates a situation where we don&rsquo;t know the response we&rsquo;re looking for, and we also don&rsquo;t know if our request is good. In one particular case, I had to set User-Agent to an arbitrary string to get any response (real user agents were blocked) - and the &ldquo;real&rdquo; response was an HTTP 412, which is by default filtered out of ffuf.</p>
+<p>Recursive fuzzing could aid in improving confidence of results. By observing persistent responses (i.e. if one host IP <em>always</em> serves the same response, regardless of provided host/path), you can likely filter out those results to achieve a higher confidence.<br>
+It&rsquo;s also worth considering a better way to identify the required HTTP headers. Since this seems to vary greatly between implementations and tech stacks, there may not be a one-size-fits-all solution. This could be by tech-detect, more fuzzing, or simply an averaged header set that will work in most cases. Maybe you can even use an LLM to guess them.</p>
+<p>Some companies host their applications using IPs provided by (and therefore owned by) the cloud providers. Expanding your scope to include these IP addresses could likely reveal some interesting results. However, given that this is a shared tenancy and shared responsibility, this could be dangerous territory to test in. If you identify subdomains with dedicated IP address assignments (e.g. a vps with an IP address that is only used by the target and not shared) you could add these to the IP fuzzing list, since this is effectively just mass testing for vhost hopping.</p>
+<h1 id="defending-against-this-technique">Defending against this technique<a hidden class="anchor" aria-hidden="true" href="#defending-against-this-technique">#</a></h1>
+<p>There are many ways to defend against this technique, varying greatly on your infrastructure and desired outcome.<br>
+By restricting traffic to only the IP addresses of your WAF, your applications can only be accessed through the intended route - retaining the protections afforded by WAFs.</p>
+<p>Defending against this is theoretically very simple. In practice - it depends a lot on your architecture, and could result in legitimate traffic being blocked if implemented incorrectly. Awareness of all vhosts served by a particular origin IP is important when deciding to restrict traffic in this way.<br>
+Let&rsquo;s look at some options for mitigation.</p>
+<h2 id="network-edge">Network edge<a hidden class="anchor" aria-hidden="true" href="#network-edge">#</a></h2>
+<p>Configure firewalls/load balancers/edge routing to explicitly block traffic to web ports (80/443), whitelisting only your WAFs IP addresses. This will allow traffic to flow normally through the WAF, but stop illegitimate traffic from directly accessing applications. Most WAF vendors have how-to articles that include the possible inbound IP ranges.</p>
+<p>These documents from Cloudflare and Akamai show which ranges to allow for each provider:<br>
+<a href="https://developers.cloudflare.com/fundamentals/concepts/cloudflare-ip-addresses/">https://developers.cloudflare.com/fundamentals/concepts/cloudflare-ip-addresses/</a><br>
+<a href="https://techdocs.akamai.com/origin-ip-acl/docs/welcome">https://techdocs.akamai.com/origin-ip-acl/docs/welcome</a></p>
+<h2 id="reverse-proxy">Reverse Proxy<a hidden class="anchor" aria-hidden="true" href="#reverse-proxy">#</a></h2>
+<p>Stopping this attack can also be achieved at the reverse proxy. We follow the same methodology as at the network edge, but this allows us to restrict more granularly - e.g. by specific web paths.</p>
+<h3 id="nginx">nginx<a hidden class="anchor" aria-hidden="true" href="#nginx">#</a></h3>
+<p>To only allow traffic to your WAF in nginx you would include an &ldquo;allow x.x.x.x&rdquo; and then &ldquo;deny all&rdquo; directive within the http block.<br>
+Rules are processed from top to bottom, with the first matching rule taking effect and subsequent rules being ignored.</p>
+<p>Reference: <a href="https://nginx.org/en/docs/http/ngx_http_access_module.html">https://nginx.org/en/docs/http/ngx_http_access_module.html</a></p>
+<pre tabindex="0"><code class="language-location" data-lang="location">    allow 123.123.123.123/28
+    allow 234.234.234.234/32
+    deny  all;
+}
+</code></pre><h3 id="apache-httpd-24">Apache httpd 2.4<a hidden class="anchor" aria-hidden="true" href="#apache-httpd-24">#</a></h3>
+<p>If you&rsquo;re using apache as your reverse proxy, you can restrict using <code>require</code> and <code>require not</code> directives, as described in the apache documentation.</p>
+<p>Reference: <a href="https://httpd.apache.org/docs/2.4/howto/access.html">https://httpd.apache.org/docs/2.4/howto/access.html</a></p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-xml" data-lang="xml"><span style="display:flex;"><span>require ip 123.123.123.123/28
+</span></span><span style="display:flex;"><span>require ip 234.234.234.234/32
+</span></span></code></pre></div><h2 id="cloudflare-tunneling">Cloudflare Tunneling<a hidden class="anchor" aria-hidden="true" href="#cloudflare-tunneling">#</a></h2>
+<p>Another approach would be to avoid exposing :443 externally at all. An example of that is the Cloudflare tunnel:<br>
+<a href="https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/">https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/</a></p>
+<p><img alt="7f2699b7f67c7d1028702df54fbf2c01.png" loading="lazy" src="/post/origin_hosts/images/7f2699b7f67c7d1028702df54fbf2c01.png"></p>
+<h1 id="complimentary-reading">Complimentary reading:<a hidden class="anchor" aria-hidden="true" href="#complimentary-reading">#</a></h1>
+<p><a href="https://labs.detectify.com/ethical-hacking/discovering-the-origin-host-to-bypass-waf/">https://labs.detectify.com/ethical-hacking/discovering-the-origin-host-to-bypass-waf/</a><br>
+<a href="https://medium.com/@mr.nt09/bypassing-cloudflare-to-access-the-origin-server-a-penetration-testers-journey-a3c279688d6c">https://medium.com/@mr.nt09/bypassing-cloudflare-to-access-the-origin-server-a-penetration-testers-journey-a3c279688d6c</a></p>
+
+
+  </div>
+
+  <footer class="post-footer">
+    <ul class="post-tags">
+    </ul>
+  </footer>
+</article>
+    </main>
+    
+<footer class="footer">
+        <span>&copy; 2025 <a href="http://localhost:1313/">Syndrome Impostor&#39;s Blog</a></span> · 
+
+    <span>
+        Powered by
+        <a href="https://gohugo.io/" rel="noopener noreferrer" target="_blank">Hugo</a> &
+        <a href="https://github.com/adityatelange/hugo-PaperMod/" rel="noopener" target="_blank">PaperMod</a>
+    </span>
+</footer>
+<a href="#top" aria-label="go to top" title="Go to Top (Alt + G)" class="top-link" id="top-link" accesskey="g">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 6" fill="currentColor">
+        <path d="M12 6H0l6-6z" />
+    </svg>
+</a>
+
+<script>
+    let menu = document.getElementById('menu')
+    if (menu) {
+        menu.scrollLeft = localStorage.getItem("menu-scroll-position");
+        menu.onscroll = function () {
+            localStorage.setItem("menu-scroll-position", menu.scrollLeft);
+        }
+    }
+
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener("click", function (e) {
+            e.preventDefault();
+            var id = this.getAttribute("href").substr(1);
+            if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView({
+                    behavior: "smooth"
+                });
+            } else {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView();
+            }
+            if (id === "top") {
+                history.replaceState(null, null, " ");
+            } else {
+                history.pushState(null, null, `#${id}`);
+            }
+        });
+    });
+
+</script>
+<script>
+    var mybutton = document.getElementById("top-link");
+    window.onscroll = function () {
+        if (document.body.scrollTop > 800 || document.documentElement.scrollTop > 800) {
+            mybutton.style.visibility = "visible";
+            mybutton.style.opacity = "1";
+        } else {
+            mybutton.style.visibility = "hidden";
+            mybutton.style.opacity = "0";
+        }
+    };
+
+</script>
+<script>
+    document.getElementById("theme-toggle").addEventListener("click", () => {
+        if (document.body.className.includes("dark")) {
+            document.body.classList.remove('dark');
+            localStorage.setItem("pref-theme", 'light');
+        } else {
+            document.body.classList.add('dark');
+            localStorage.setItem("pref-theme", 'dark');
+        }
+    })
+
+</script>
+</body>
+
+</html>
