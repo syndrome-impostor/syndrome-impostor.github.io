@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <meta name="robots" content="index, follow">
-<title>Cert unpinning with Frida | Syndrome Impostor&#39;s Blog</title>
+<title>Cert unpinning with Frida | Blog</title>
 <meta name="keywords" content="">
 <meta name="description" content="This guide will enable you to unpin android applications, and forward traffic to a local proxy (i.e. Burp/Caido/Zap) running on port :8080 on your local machine.
 References:
@@ -24,9 +24,9 @@ You have a rooted device and adb working. If you do not already, follow instruct
 
 
 Modern versions of android require you to use the &ldquo;FAKEBOOTIMG&rdquo; option with rootAVD. More info can be found at the link above. You may need to do a clean boot during the setup like so: emulator @device_name -no-snapshot-load">
-<meta name="author" content="Syndrome Impostor">
+<meta name="author" content="">
 <link rel="canonical" href="https://syndrome-impostor.github.io/post/unpinning/">
-<link crossorigin="anonymous" href="/assets/css/stylesheet.8fe10233a706bc87f2e08b3cf97b8bd4c0a80f10675a143675d59212121037c0.css" integrity="sha256-j&#43;ECM6cGvIfy4Is8&#43;XuL1MCoDxBnWhQ2ddWSEhIQN8A=" rel="preload stylesheet" as="style">
+<link crossorigin="anonymous" href="/assets/css/stylesheet.c42240ba4ddfb467d3438c7a3c2a0b62c9cff848ebe0f6a402efbfdeb4571151.css" integrity="sha256-xCJAuk3ftGfTQ4x6PCoLYsnP&#43;Ejr4PakAu&#43;/3rRXEVE=" rel="preload stylesheet" as="style">
 <link rel="icon" href="https://syndrome-impostor.github.io/favicon.ico">
 <link rel="icon" type="image/png" sizes="16x16" href="https://syndrome-impostor.github.io/favicon-16x16.png">
 <link rel="icon" type="image/png" sizes="32x32" href="https://syndrome-impostor.github.io/favicon-32x32.png">
@@ -72,7 +72,7 @@ Modern versions of android require you to use the &ldquo;FAKEBOOTIMG&rdquo; opti
 
     </style>
 </noscript><meta property="og:url" content="https://syndrome-impostor.github.io/post/unpinning/">
-  <meta property="og:site_name" content="Syndrome Impostor&#39;s Blog">
+  <meta property="og:site_name" content="Blog">
   <meta property="og:title" content="Cert unpinning with Frida">
   <meta property="og:description" content="This guide will enable you to unpin android applications, and forward traffic to a local proxy (i.e. Burp/Caido/Zap) running on port :8080 on your local machine.
 References:
@@ -143,17 +143,13 @@ Modern versions of android require you to use the &ldquo;FAKEBOOTIMG&rdquo; opti
   "inLanguage": "en",
   "datePublished": "2024-09-22T20:45:56-07:00",
   "dateModified": "2024-09-22T20:45:56-07:00",
-  "author":{
-    "@type": "Person",
-    "name": "Syndrome Impostor"
-  },
   "mainEntityOfPage": {
     "@type": "WebPage",
     "@id": "https://syndrome-impostor.github.io/post/unpinning/"
   },
   "publisher": {
     "@type": "Organization",
-    "name": "Syndrome Impostor's Blog",
+    "name": "Blog",
     "logo": {
       "@type": "ImageObject",
       "url": "https://syndrome-impostor.github.io/favicon.ico"
@@ -178,7 +174,7 @@ Modern versions of android require you to use the &ldquo;FAKEBOOTIMG&rdquo; opti
 <header class="header">
     <nav class="nav">
         <div class="logo">
-            <a href="https://syndrome-impostor.github.io/" accesskey="h" title="Syndrome Impostor&#39;s Blog (Alt + H)">Syndrome Impostor&#39;s Blog</a>
+            <a href="https://syndrome-impostor.github.io/" accesskey="h" title="Blog (Alt + H)">Blog</a>
             <div class="logo-switches">
                 <button id="theme-toggle" accesskey="t" title="(Alt + T)" aria-label="Toggle theme">
                     <svg id="moon" xmlns="http://www.w3.org/2000/svg" width="24" height="18" viewBox="0 0 24 24"
@@ -204,6 +200,11 @@ Modern versions of android require you to use the &ldquo;FAKEBOOTIMG&rdquo; opti
         </div>
         <ul id="menu">
             <li>
+                <a href="https://syndrome-impostor.github.io/cves/" title="CVEs">
+                    <span>CVEs</span>
+                </a>
+            </li>
+            <li>
                 <a href="https://syndrome-impostor.github.io/about/" title="About">
                     <span>About</span>
                 </a>
@@ -219,7 +220,7 @@ Modern versions of android require you to use the &ldquo;FAKEBOOTIMG&rdquo; opti
     <h1 class="post-title entry-hint-parent">
       Cert unpinning with Frida
     </h1>
-    <div class="post-meta"><span title='2024-09-22 20:45:56 -0700 PDT'>September 22, 2024</span>&nbsp;·&nbsp;Syndrome Impostor
+    <div class="post-meta"><span title='2024-09-22 20:45:56 -0700 PDT'>September 22, 2024</span>
 
 </div>
   </header> 
@@ -239,7 +240,8 @@ Modern versions of android require you to use the &ldquo;FAKEBOOTIMG&rdquo; opti
 </li>
 </ul>
 <blockquote>
-<p><em>Modern versions of android require you to use the &ldquo;FAKEBOOTIMG&rdquo; option with rootAVD. More info can be found at the link above. You may need to do a clean boot during the setup like so: <code>emulator @device_name -no-snapshot-load</code></em></p></blockquote>
+<p><em>Modern versions of android require you to use the &ldquo;FAKEBOOTIMG&rdquo; option with rootAVD. More info can be found at the link above. You may need to do a clean boot during the setup like so: <code>emulator @device_name -no-snapshot-load</code></em></p>
+</blockquote>
 <h3 id="to-confirm-your-device-is-rooted-properly">To confirm your device is rooted properly:<a hidden class="anchor" aria-hidden="true" href="#to-confirm-your-device-is-rooted-properly">#</a></h3>
 <ol>
 <li><code>adb root</code> should fail, indicating you&rsquo;re running a production build:<br>
@@ -268,7 +270,8 @@ id
 <code>frida-server-XX-android-arm64.xz</code></li>
 </ol>
 <blockquote>
-<p><em>frida-server needs to match your Android virtualized hardware, usually arm64. This can be checked with <code>adb shell getprop ro.product.cpu.abi</code></em></p></blockquote>
+<p><em>frida-server needs to match your Android virtualized hardware, usually arm64. This can be checked with <code>adb shell getprop ro.product.cpu.abi</code></em></p>
+</blockquote>
 <ol start="2">
 <li>Unpack the .xz archive.</li>
 <li>Move the unpacked frida-server to your android device:</li>
@@ -284,9 +287,11 @@ id
 <pre tabindex="0"><code>Proxy hostname: 127.0.0.1
 Proxy port: 8080
 </code></pre><blockquote>
-<p>If you see a notification about the Wifi not having connection, choose &lsquo;use anyways&rsquo;.</p></blockquote>
+<p>If you see a notification about the Wifi not having connection, choose &lsquo;use anyways&rsquo;.</p>
+</blockquote>
 <blockquote>
-<p>Disabling LTE on the emulator will stop the traffic from going through an alternate interface. This doesn&rsquo;t always matter, but can help make it more reliable.</p></blockquote>
+<p>Disabling LTE on the emulator will stop the traffic from going through an alternate interface. This doesn&rsquo;t always matter, but can help make it more reliable.</p>
+</blockquote>
 <h2 id="using-frida">Using Frida<a hidden class="anchor" aria-hidden="true" href="#using-frida">#</a></h2>
 <ol>
 <li>Connect to your Android device as root:</li>
@@ -299,7 +304,8 @@ su
 <pre tabindex="0"><code>pm list packages|grep APPNAME
 </code></pre><p><img alt="Package name" loading="lazy" src="/post/unpinning/images/package.png"></p>
 <blockquote>
-<p>Here, the app name is &lsquo;com.ringapp&rsquo;</p></blockquote>
+<p>Here, the app name is &lsquo;com.ringapp&rsquo;</p>
+</blockquote>
 <ol start="3">
 <li>Start the daemon:</li>
 </ol>
@@ -315,7 +321,8 @@ su
 </ol>
 <pre tabindex="0"><code>adb reverse tcp:8080 tcp:8080
 </code></pre><blockquote>
-<p>This has to be run every time you restart the emulator</p></blockquote>
+<p>This has to be run every time you restart the emulator</p>
+</blockquote>
 <ol start="3">
 <li>Run the frida unpinning script: <code>frida -U -l ./universalUnpin.js -f com.&lt;appname&gt;</code></li>
 </ol>
@@ -327,13 +334,15 @@ su
 </ol>
 <pre tabindex="0"><code>emulator @rooted
 </code></pre><blockquote>
-<p>Ensure Wifi is on and used as the main network</p></blockquote>
+<p>Ensure Wifi is on and used as the main network</p>
+</blockquote>
 <ol start="2">
 <li>Forward the android port to your local system, and start the Frida daemon:</li>
 </ol>
 <pre tabindex="0"><code>adb reverse tcp:8080 tcp:8080 &amp;&amp; adb shell su -c /data/local/tmp/frida-server -D
 </code></pre><blockquote>
-<p>The daemon will hang your terminal. You can either close the terminal, or open a second to run the next command.</p></blockquote>
+<p>The daemon will hang your terminal. You can either close the terminal, or open a second to run the next command.</p>
+</blockquote>
 <ol start="3">
 <li>Launch the app with the unpinning script:</li>
 </ol>
@@ -350,7 +359,7 @@ su
     </main>
     
 <footer class="footer">
-        <span>&copy; 2025 <a href="https://syndrome-impostor.github.io/">Syndrome Impostor&#39;s Blog</a></span> · 
+        <span>&copy; 2026 <a href="https://syndrome-impostor.github.io/">Blog</a></span> · 
 
     <span>
         Powered by
