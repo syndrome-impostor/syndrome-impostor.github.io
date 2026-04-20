@@ -13,7 +13,7 @@ My handle was given to me by two very close friends. I carry it as a reminder th
 I focus on finding vulnerabilities at the intersection of different technologies, specifically:">
 <meta name="author" content="">
 <link rel="canonical" href="https://syndrome-impostor.github.io/about/">
-<link crossorigin="anonymous" href="/assets/css/stylesheet.4905a6516a0aefaeeb103c4a72d13c600f235761927074b6dd8a6f2f2b0d02a5.css" integrity="sha256-SQWmUWoK767rEDxKctE8YA8jV2GScHS23YpvLysNAqU=" rel="preload stylesheet" as="style">
+<link crossorigin="anonymous" href="/assets/css/stylesheet.85bb0b5224532cdf5ebf01d3a3a8759a149d086328c34849e538da4808303f7e.css" integrity="sha256-hbsLUiRTLN9evwHTo6h1mhSdCGMow0hJ5TjaSAgwP34=" rel="preload stylesheet" as="style">
 <link rel="icon" href="https://syndrome-impostor.github.io/favicon.ico">
 <link rel="icon" type="image/png" sizes="16x16" href="https://syndrome-impostor.github.io/favicon-16x16.png">
 <link rel="icon" type="image/png" sizes="32x32" href="https://syndrome-impostor.github.io/favicon-32x32.png">
@@ -54,12 +54,6 @@ I focus on finding vulnerabilities at the intersection of different technologies
             }
         }
 
-        @media (prefers-color-scheme: light) {
-            .list::-webkit-scrollbar-thumb {
-                border-color: var(--code-bg);
-            }
-        }
-
     </style>
 </noscript>
 <script>
@@ -79,14 +73,14 @@ I focus on finding vulnerabilities at the intersection of different technologies
   <meta property="og:description" content="I go by Syndrome Impostor. I am a full-time bug bounty hunter and security researcher specializing in OAuth and OIDC implementations.
 My handle was given to me by two very close friends. I carry it as a reminder that nearly everyone in this industry experiences impostor syndrome, and we all have something valuable to contribute.
 🎯 Technical Focus I focus on finding vulnerabilities at the intersection of different technologies, specifically:">
-  <meta property="og:locale" content="en-us">
+  <meta property="og:locale" content="en_us">
   <meta property="og:type" content="article">
-<meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="Hi there! 👋">
-<meta name="twitter:description" content="I go by Syndrome Impostor. I am a full-time bug bounty hunter and security researcher specializing in OAuth and OIDC implementations.
+
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Hi there! 👋">
+  <meta name="twitter:description" content="I go by Syndrome Impostor. I am a full-time bug bounty hunter and security researcher specializing in OAuth and OIDC implementations.
 My handle was given to me by two very close friends. I carry it as a reminder that nearly everyone in this industry experiences impostor syndrome, and we all have something valuable to contribute.
-🎯 Technical Focus
-I focus on finding vulnerabilities at the intersection of different technologies, specifically:">
+🎯 Technical Focus I focus on finding vulnerabilities at the intersection of different technologies, specifically:">
 
 
 <script type="application/ld+json">
@@ -135,17 +129,17 @@ I focus on finding vulnerabilities at the intersection of different technologies
 </head>
 <body id="top">
     <header class="header">
-    <nav class="nav">
+    <nav class="header-nav">
         <div class="logo">
             <a href="https://syndrome-impostor.github.io/" accesskey="h" title="Blog (Alt + H)">Blog</a>
             <div class="logo-switches">
-                <button id="theme-toggle" accesskey="t" title="(Alt + T)" aria-label="Toggle theme">
-                    <svg id="moon" xmlns="http://www.w3.org/2000/svg" width="24" height="18" viewBox="0 0 24 24"
+                <button id="theme-toggle" class="theme-toggle" accesskey="t" title="(Alt + T)" aria-label="Toggle theme">
+                    <svg class="moon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24"
                         fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
                         stroke-linejoin="round">
                         <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
                     </svg>
-                    <svg id="sun" xmlns="http://www.w3.org/2000/svg" width="24" height="18" viewBox="0 0 24 24"
+                    <svg class="sun" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24"
                         fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
                         stroke-linejoin="round">
                         <circle cx="12" cy="12" r="5"></circle>
@@ -161,7 +155,7 @@ I focus on finding vulnerabilities at the intersection of different technologies
                 </button>
             </div>
         </div>
-        <ul id="menu">
+        <ul id="menu" class="menu">
             <li>
                 <a href="https://syndrome-impostor.github.io/cves/" title="CVEs">
                     <span>CVEs</span>
@@ -187,7 +181,7 @@ I focus on finding vulnerabilities at the intersection of different technologies
 
 </div>
   </header> 
-  <div class="post-content"><p>I go by <strong>Syndrome Impostor</strong>. I am a full-time bug bounty hunter and security researcher specializing in OAuth and OIDC implementations.</p>
+  <div class="post-content md-content"><p>I go by <strong>Syndrome Impostor</strong>. I am a full-time bug bounty hunter and security researcher specializing in OAuth and OIDC implementations.</p>
 <p>My handle was given to me by two very close friends. I carry it as a reminder that nearly everyone in this industry experiences impostor syndrome, and we all have something valuable to contribute.</p>
 <h2 id="-technical-focus">🎯 Technical Focus<a hidden class="anchor" aria-hidden="true" href="#-technical-focus">#</a></h2>
 <p>I focus on finding vulnerabilities at the intersection of different technologies, specifically:</p>
@@ -232,9 +226,11 @@ I focus on finding vulnerabilities at the intersection of different technologies
         <a href="https://github.com/adityatelange/hugo-PaperMod/" rel="noopener" target="_blank">PaperMod</a>
     </span>
 </footer>
-<a href="#top" aria-label="go to top" title="Go to Top (Alt + G)" class="top-link" id="top-link" accesskey="g">
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 6" fill="currentColor">
-        <path d="M12 6H0l6-6z" />
+<a href="#top" id="top-link" class="top-link hidden" aria-label="go to top" title="Go to Top (Alt + G)" accesskey="g">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+        stroke-linecap="round" stroke-linejoin="round" class="feather feather-chevrons-up">
+        <polyline points="17 11 12 6 7 11"></polyline>
+        <polyline points="17 18 12 13 7 18"></polyline>
     </svg>
 </a>
 
@@ -273,14 +269,13 @@ I focus on finding vulnerabilities at the intersection of different technologies
 
 </script>
 <script>
-    var mybutton = document.getElementById("top-link");
+    var toplink = document.getElementById("top-link");
     window.onscroll = function () {
-        if (document.body.scrollTop > 800 || document.documentElement.scrollTop > 800) {
-            mybutton.style.visibility = "visible";
-            mybutton.style.opacity = "1";
+        const scrollThreshold = window.innerHeight;
+        if (document.body.scrollTop > scrollThreshold || document.documentElement.scrollTop > scrollThreshold) {
+            toplink.classList.remove("hidden");
         } else {
-            mybutton.style.visibility = "hidden";
-            mybutton.style.opacity = "0";
+            toplink.classList.add("hidden");
         }
     };
 
